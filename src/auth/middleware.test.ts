@@ -3,40 +3,31 @@ import { isDevMode, extractJWT } from './middleware';
 import type { ClawdbotEnv } from '../types';
 import type { Context } from 'hono';
 import type { AppEnv } from '../types';
-
-// Helper to create a minimal env object
-function createEnv(overrides: Partial<ClawdbotEnv> = {}): ClawdbotEnv {
-  return {
-    Sandbox: {} as any,
-    ASSETS: {} as any,
-    CLAWDBOT_BUCKET: {} as any,
-    ...overrides,
-  };
-}
+import { createMockEnv } from '../test-utils';
 
 describe('isDevMode', () => {
   it('returns true when DEV_MODE is "true"', () => {
-    const env = createEnv({ DEV_MODE: 'true' });
+    const env = createMockEnv({ DEV_MODE: 'true' });
     expect(isDevMode(env)).toBe(true);
   });
 
   it('returns false when DEV_MODE is undefined', () => {
-    const env = createEnv();
+    const env = createMockEnv();
     expect(isDevMode(env)).toBe(false);
   });
 
   it('returns false when DEV_MODE is "false"', () => {
-    const env = createEnv({ DEV_MODE: 'false' });
+    const env = createMockEnv({ DEV_MODE: 'false' });
     expect(isDevMode(env)).toBe(false);
   });
 
   it('returns false when DEV_MODE is any other value', () => {
-    const env = createEnv({ DEV_MODE: 'yes' });
+    const env = createMockEnv({ DEV_MODE: 'yes' });
     expect(isDevMode(env)).toBe(false);
   });
 
   it('returns false when DEV_MODE is empty string', () => {
-    const env = createEnv({ DEV_MODE: '' });
+    const env = createMockEnv({ DEV_MODE: '' });
     expect(isDevMode(env)).toBe(false);
   });
 });
@@ -146,7 +137,7 @@ describe('createAccessMiddleware', () => {
         header: (name: string) => headers.get(name),
         raw: { headers },
       },
-      env: createEnv(options.env),
+      env: createMockEnv(options.env),
       json: jsonMock,
       html: htmlMock,
       redirect: redirectMock,

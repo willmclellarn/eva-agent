@@ -19,7 +19,7 @@ function ButtonSpinner() {
   return <span className="btn-spinner" />
 }
 
-export default function DevicesPage() {
+export default function AdminPage() {
   const [pending, setPending] = useState<PendingDevice[]>([])
   const [paired, setPaired] = useState<PairedDevice[]>([])
   const [storageStatus, setStorageStatus] = useState<StorageStatusResponse | null>(null)

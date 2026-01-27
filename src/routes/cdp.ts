@@ -1617,10 +1617,6 @@ async function handleEmulation(
       }
       
       if (features) {
-        const featureObj: Record<string, string> = {};
-        for (const f of features) {
-          featureObj[f.name] = f.value;
-        }
         await page.emulateMediaFeatures(
           features.map(f => ({ name: f.name, value: f.value }))
         );

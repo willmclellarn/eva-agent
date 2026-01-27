@@ -1,44 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import { buildEnvVars } from './env';
-import type { ClawdbotEnv } from '../types';
-
-// Helper to create a minimal env object
-function createEnv(overrides: Partial<ClawdbotEnv> = {}): ClawdbotEnv {
-  return {
-    Sandbox: {} as any,
-    ASSETS: {} as any,
-    CLAWDBOT_BUCKET: {} as any,
-    ...overrides,
-  };
-}
+import { createMockEnv } from '../test-utils';
 
 describe('buildEnvVars', () => {
   it('returns empty object when no env vars set', () => {
-    const env = createEnv();
+    const env = createMockEnv();
     const result = buildEnvVars(env);
     expect(result).toEqual({});
   });
 
   it('includes ANTHROPIC_API_KEY when set', () => {
-    const env = createEnv({ ANTHROPIC_API_KEY: 'sk-test-key' });
+    const env = createMockEnv({ ANTHROPIC_API_KEY: 'sk-test-key' });
     const result = buildEnvVars(env);
     expect(result.ANTHROPIC_API_KEY).toBe('sk-test-key');
   });
 
   it('includes OPENAI_API_KEY when set', () => {
-    const env = createEnv({ OPENAI_API_KEY: 'sk-openai-key' });
+    const env = createMockEnv({ OPENAI_API_KEY: 'sk-openai-key' });
     const result = buildEnvVars(env);
     expect(result.OPENAI_API_KEY).toBe('sk-openai-key');
   });
 
   it('includes CLAWDBOT_GATEWAY_TOKEN when set', () => {
-    const env = createEnv({ CLAWDBOT_GATEWAY_TOKEN: 'my-token' });
+    const env = createMockEnv({ CLAWDBOT_GATEWAY_TOKEN: 'my-token' });
     const result = buildEnvVars(env);
     expect(result.CLAWDBOT_GATEWAY_TOKEN).toBe('my-token');
   });
 
   it('includes all channel tokens when set', () => {
-    const env = createEnv({
+    const env = createMockEnv({
       TELEGRAM_BOT_TOKEN: 'tg-token',
       TELEGRAM_DM_POLICY: 'pairing',
       DISCORD_BOT_TOKEN: 'discord-token',
@@ -57,7 +47,7 @@ describe('buildEnvVars', () => {
   });
 
   it('maps DEV_MODE to CLAWDBOT_DEV_MODE for container', () => {
-    const env = createEnv({
+    const env = createMockEnv({
       DEV_MODE: 'true',
       CLAWDBOT_BIND_MODE: 'lan',
     });
@@ -69,7 +59,7 @@ describe('buildEnvVars', () => {
   });
 
   it('combines all env vars correctly', () => {
-    const env = createEnv({
+    const env = createMockEnv({
       ANTHROPIC_API_KEY: 'sk-key',
       CLAWDBOT_GATEWAY_TOKEN: 'token',
       TELEGRAM_BOT_TOKEN: 'tg',
