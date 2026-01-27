@@ -8,6 +8,7 @@ export interface ClawdbotEnv {
   ASSETS: Fetcher; // Assets binding for admin UI static files
   CLAWDBOT_BUCKET: R2Bucket; // R2 bucket for persistent storage
   ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_BASE_URL?: string; // Custom base URL for Anthropic API (e.g., Cloudflare AI Gateway)
   OPENAI_API_KEY?: string;
   CLAWDBOT_GATEWAY_TOKEN?: string;
 
