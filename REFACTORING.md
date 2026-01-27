@@ -179,9 +179,47 @@ describe('POST /api/gateway/restart', () => {
 
 ## Progress Tracking
 
-- [ ] Set up Vitest
-- [ ] Extract `types.ts` and `config.ts`
-- [ ] Extract `auth/` modules with tests
-- [ ] Extract `gateway/` modules with tests
-- [ ] Extract routes with reusable auth middleware
-- [ ] Clean up `index.ts`
+- [x] Set up Vitest
+- [x] Extract `types.ts` and `config.ts`
+- [x] Extract `auth/` modules with tests
+- [x] Extract `gateway/` modules with tests
+- [x] Extract routes with reusable auth middleware
+- [x] Clean up `index.ts`
+
+## Final Structure
+
+```
+src/
+├── index.ts              # Main app entry (~100 lines, down from 964)
+├── types.ts              # Type definitions
+├── config.ts             # Constants
+├── auth/
+│   ├── index.ts          # Re-exports
+│   ├── jwt.ts            # JWT verification
+│   ├── jwt.test.ts       # JWT tests (7 tests)
+│   ├── jwks.ts           # JWKS fetching and caching
+│   └── middleware.ts     # Reusable CF Access middleware
+├── gateway/
+│   ├── index.ts          # Re-exports
+│   ├── env.ts            # buildEnvVars
+│   ├── env.test.ts       # Env tests (9 tests)
+│   ├── process.ts        # Process management
+│   ├── process.test.ts   # Process tests (8 tests)
+│   └── r2.ts             # R2 storage mounting
+├── routes/
+│   ├── index.ts          # Re-exports
+│   ├── api.ts            # /api/* routes
+│   ├── admin.ts          # /_admin/* routes
+│   └── debug.ts          # /debug/* routes
+└── client/               # React admin UI (unchanged)
+```
+
+## Test Summary
+
+- **24 tests total** across 3 test files
+- All tests passing
+- Tests cover:
+  - `base64UrlDecode` function
+  - JWT verification (format, missing kid, etc.)
+  - `buildEnvVars` with various configurations
+  - `findExistingClawdbotProcess` with mock processes

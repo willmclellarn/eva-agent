@@ -11,7 +11,10 @@
     "dev": "vite dev",
     "start": "wrangler dev",
     "types": "wrangler types",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "hono": "^4.11.6",
@@ -27,8 +30,10 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",
     "vite": "^6.0.0",
+    "vitest": "^4.0.18",
     "wrangler": "^4.50.0"
   },
   "author": "",
