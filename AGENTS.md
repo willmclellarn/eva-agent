@@ -2,6 +2,15 @@
 
 Guidelines for AI agents working on this codebase.
 
+## Project: Eva
+
+This is **Eva** - a personal AI assistant running OpenClaw in Cloudflare Sandbox.
+
+**Key URLs (production):**
+- Main UI: https://moltbot-sandbox.w-6b6.workers.dev/
+- Admin UI: https://moltbot-sandbox.w-6b6.workers.dev/_admin/
+- Debug: https://moltbot-sandbox.w-6b6.workers.dev/debug/ (requires DEBUG_ROUTES=true)
+
 ## Project Overview
 
 This is a Cloudflare Worker that runs [OpenClaw](https://github.com/openclaw/openclaw) in a Cloudflare Sandbox container. It provides:

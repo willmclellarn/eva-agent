@@ -12,4 +12,4 @@ export const STARTUP_TIMEOUT_MS = 180_000;
 export const R2_MOUNT_PATH = '/data/openclaw';
 
 /** R2 bucket name for persistent storage */
-export const R2_BUCKET_NAME = 'openclaw-data';
+export const R2_BUCKET_NAME = 'moltbot-data';
