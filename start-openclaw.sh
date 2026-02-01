@@ -1,6 +1,6 @@
 #!/bin/bash
 # Startup script for OpenClaw in Cloudflare Sandbox
-# Build: 2026-01-31-v31-openclaw-migration
+# Build: 2026-01-31-v32-config-cleanup
 # This script:
 # 1. Restores config from R2 backup if available (supports both old clawdbot and new openclaw formats)
 # 2. Configures openclaw from environment variables
@@ -194,6 +194,25 @@ if (config.models?.providers?.anthropic?.models) {
     }
 }
 
+// Clean up potentially invalid config fields from old clawdbot versions
+// that may cause openclaw to fail validation
+if (config.commands?.nativeSkills !== undefined) {
+    console.log('Removing deprecated commands.nativeSkills field');
+    delete config.commands.nativeSkills;
+}
+if (config.agents?.defaults?.subagents !== undefined) {
+    console.log('Removing deprecated agents.defaults.subagents field');
+    delete config.agents.defaults.subagents;
+}
+// Remove empty commands object if it has no valid keys
+if (config.commands && Object.keys(config.commands).length === 0) {
+    delete config.commands;
+} else if (config.commands && Object.keys(config.commands).every(k => config.commands[k] === 'auto')) {
+    // Also remove if all values are just 'auto' (likely default/unused)
+    console.log('Removing default-only commands config');
+    delete config.commands;
+}
+
 // Gateway configuration
 config.gateway.port = 18789;
 config.gateway.mode = 'local';
@@ -319,6 +338,29 @@ rm -f "$CONFIG_DIR/gateway.lock" 2>/dev/null || true
 
 BIND_MODE="lan"
 echo "Dev mode: ${OPENCLAW_DEV_MODE:-false}, Bind mode: $BIND_MODE"
+
+# Validate the config before starting
+echo "Validating config..."
+if ! node -e "const c = require('$CONFIG_FILE'); console.log('Config validated, keys:', Object.keys(c).join(', '));" 2>&1; then
+    echo "ERROR: Config file is invalid JSON. Creating minimal config..."
+    cat > "$CONFIG_FILE" << 'EOFCONFIG'
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/root/.openclaw/workspace"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local"
+  }
+}
+EOFCONFIG
+fi
+
+# Show what version we're running
+echo "OpenClaw version:"
+openclaw --version 2>&1 || echo "ERROR: openclaw --version failed"
 
 if [ -n "$OPENCLAW_GATEWAY_TOKEN" ]; then
     echo "Starting gateway with token auth..."
