@@ -1,5 +1,5 @@
 import type { Sandbox } from '@cloudflare/sandbox';
-import type { MoltbotEnv } from '../types';
+import type { OpenClawEnv } from '../types';
 import { R2_MOUNT_PATH, R2_BUCKET_NAME } from '../config';
 
 /**
@@ -27,12 +27,12 @@ async function isR2Mounted(sandbox: Sandbox): Promise<boolean> {
 
 /**
  * Mount R2 bucket for persistent storage
- * 
+ *
  * @param sandbox - The sandbox instance
  * @param env - Worker environment bindings
  * @returns true if mounted successfully, false otherwise
  */
-export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise<boolean> {
+export async function mountR2Storage(sandbox: Sandbox, env: OpenClawEnv): Promise<boolean> {
   // Skip if R2 credentials are not configured
   if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.CF_ACCOUNT_ID) {
     console.log('R2 storage not configured (missing R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, or CF_ACCOUNT_ID)');
@@ -55,19 +55,19 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
         secretAccessKey: env.R2_SECRET_ACCESS_KEY,
       },
     });
-    console.log('R2 bucket mounted successfully - moltbot data will persist across sessions');
+    console.log('R2 bucket mounted successfully - openclaw data will persist across sessions');
     return true;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.log('R2 mount error:', errorMessage);
-    
+
     // Check again if it's mounted - the error might be misleading
     if (await isR2Mounted(sandbox)) {
       console.log('R2 bucket is mounted despite error');
       return true;
     }
-    
-    // Don't fail if mounting fails - moltbot can still run without persistent storage
+
+    // Don't fail if mounting fails - openclaw can still run without persistent storage
     console.error('Failed to mount R2 bucket:', err);
     return false;
   }

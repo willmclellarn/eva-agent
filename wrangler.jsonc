@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "moltbot-sandbox",
+  "name": "openclaw-sandbox",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-06",
   "compatibility_flags": ["nodejs_compat"],
@@ -32,7 +32,7 @@
   "build": {
     "command": "npm run build",
   },
-  // Container configuration for the Moltbot sandbox
+  // Container configuration for the OpenClaw sandbox
   "containers": [
     {
       "class_name": "Sandbox",
@@ -55,14 +55,14 @@
       "tag": "v1",
     },
   ],
-  // R2 bucket for persistent storage (moltbot data, conversations, etc.)
+  // R2 bucket for persistent storage (openclaw data, conversations, etc.)
   "r2_buckets": [
     {
-      "binding": "MOLTBOT_BUCKET",
-      "bucket_name": "moltbot-data",
+      "binding": "OPENCLAW_BUCKET",
+      "bucket_name": "openclaw-data",
     },
   ],
-  // Cron trigger to sync moltbot data to R2 every 5 minutes
+  // Cron trigger to sync openclaw data to R2 every 5 minutes
   "triggers": {
     "crons": ["*/5 * * * *"],
   },
@@ -79,7 +79,7 @@
   // - DISCORD_BOT_TOKEN: (optional) Discord bot token
   // - SLACK_BOT_TOKEN: (optional) Slack bot token
   // - SLACK_APP_TOKEN: (optional) Slack app token
-  // - MOLTBOT_GATEWAY_TOKEN: (optional) Token to protect gateway access, if unset device pairing will be used
+  // - OPENCLAW_GATEWAY_TOKEN: (optional) Token to protect gateway access, if unset device pairing will be used
   // - CDP_SECRET: (optional) Shared secret for /cdp endpoint authentication
   //
   // R2 persistent storage secrets (required for data persistence across sessions):

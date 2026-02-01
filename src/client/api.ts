@@ -140,3 +140,44 @@ export async function triggerSync(): Promise<SyncResponse> {
     method: 'POST',
   });
 }
+
+// Backup management interfaces and functions
+
+export interface BackupListResponse {
+  versioned: string[];
+  golden: string[];
+  message?: string;
+  error?: string;
+}
+
+export interface GoldenBackupResponse {
+  success: boolean;
+  message?: string;
+  path?: string;
+  timestamp?: string;
+  error?: string;
+}
+
+export interface RestoreBackupResponse {
+  success: boolean;
+  message?: string;
+  details?: string;
+  error?: string;
+}
+
+export async function listBackups(): Promise<BackupListResponse> {
+  return apiRequest<BackupListResponse>('/backups');
+}
+
+export async function createGoldenBackup(): Promise<GoldenBackupResponse> {
+  return apiRequest<GoldenBackupResponse>('/backup/golden', {
+    method: 'POST',
+  });
+}
+
+export async function restoreBackup(type: 'versioned' | 'golden', name: string): Promise<RestoreBackupResponse> {
+  return apiRequest<RestoreBackupResponse>('/backup/restore', {
+    method: 'POST',
+    body: JSON.stringify({ type, name }),
+  });
+}

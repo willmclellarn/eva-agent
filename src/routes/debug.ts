@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import { findExistingMoltbotProcess } from '../gateway';
+import { findExistingOpenClawProcess } from '../gateway';
 
 /**
  * Debug routes for inspecting container state
@@ -13,11 +13,11 @@ const debug = new Hono<AppEnv>();
 debug.get('/version', async (c) => {
   const sandbox = c.get('sandbox');
   try {
-    // Get moltbot version (CLI is still named clawdbot until upstream renames)
-    const versionProcess = await sandbox.startProcess('clawdbot --version');
+    // Get openclaw version
+    const versionProcess = await sandbox.startProcess('openclaw --version');
     await new Promise(resolve => setTimeout(resolve, 500));
     const versionLogs = await versionProcess.getLogs();
-    const moltbotVersion = (versionLogs.stdout || versionLogs.stderr || '').trim();
+    const openclawVersion = (versionLogs.stdout || versionLogs.stderr || '').trim();
 
     // Get node version
     const nodeProcess = await sandbox.startProcess('node --version');
@@ -26,7 +26,7 @@ debug.get('/version', async (c) => {
     const nodeVersion = (nodeLogs.stdout || '').trim();
 
     return c.json({
-      moltbot_version: moltbotVersion,
+      openclaw_version: openclawVersion,
       node_version: nodeVersion,
     });
   } catch (error) {
@@ -73,7 +73,7 @@ debug.get('/processes', async (c) => {
       'completed': 2,
       'failed': 3,
     };
-    
+
     processData.sort((a, b) => {
       const statusA = statusOrder[a.status as string] ?? 99;
       const statusB = statusOrder[b.status as string] ?? 99;
@@ -93,24 +93,24 @@ debug.get('/processes', async (c) => {
   }
 });
 
-// GET /debug/gateway-api - Probe the moltbot gateway HTTP API
+// GET /debug/gateway-api - Probe the openclaw gateway HTTP API
 debug.get('/gateway-api', async (c) => {
   const sandbox = c.get('sandbox');
   const path = c.req.query('path') || '/';
-  const MOLTBOT_PORT = 18789;
-  
+  const OPENCLAW_PORT = 18789;
+
   try {
-    const url = `http://localhost:${MOLTBOT_PORT}${path}`;
-    const response = await sandbox.containerFetch(new Request(url), MOLTBOT_PORT);
+    const url = `http://localhost:${OPENCLAW_PORT}${path}`;
+    const response = await sandbox.containerFetch(new Request(url), OPENCLAW_PORT);
     const contentType = response.headers.get('content-type') || '';
-    
+
     let body: string | object;
     if (contentType.includes('application/json')) {
       body = await response.json();
     } else {
       body = await response.text();
     }
-    
+
     return c.json({
       path,
       status: response.status,
@@ -123,14 +123,14 @@ debug.get('/gateway-api', async (c) => {
   }
 });
 
-// GET /debug/cli - Test moltbot CLI commands (CLI is still named clawdbot)
+// GET /debug/cli - Test openclaw CLI commands
 debug.get('/cli', async (c) => {
   const sandbox = c.get('sandbox');
-  const cmd = c.req.query('cmd') || 'clawdbot --help';
-  
+  const cmd = c.req.query('cmd') || 'openclaw --help';
+
   try {
     const proc = await sandbox.startProcess(cmd);
-    
+
     // Wait longer for command to complete
     let attempts = 0;
     while (attempts < 30) {
@@ -173,11 +173,11 @@ debug.get('/logs', async (c) => {
         }, 404);
       }
     } else {
-      process = await findExistingMoltbotProcess(sandbox);
+      process = await findExistingOpenClawProcess(sandbox);
       if (!process) {
         return c.json({
           status: 'no_process',
-          message: 'No Moltbot process is currently running',
+          message: 'No OpenClaw process is currently running',
           stdout: '',
           stderr: '',
         });
@@ -208,7 +208,7 @@ debug.get('/ws-test', async (c) => {
   const host = c.req.header('host') || 'localhost';
   const protocol = c.req.header('x-forwarded-proto') || 'https';
   const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
-  
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -239,22 +239,22 @@ debug.get('/ws-test', async (c) => {
     <button id="sendConnect" disabled>Send Connect Frame</button>
   </div>
   <div id="log"></div>
-  
+
   <script>
     const wsUrl = '${wsProtocol}://${host}/';
     let ws = null;
-    
+
     const log = (msg, className = '') => {
       const logEl = document.getElementById('log');
       const time = new Date().toISOString().substr(11, 12);
       logEl.innerHTML += '<span class="' + className + '">[' + time + '] ' + msg + '</span>\\n';
       logEl.scrollTop = logEl.scrollHeight;
     };
-    
+
     document.getElementById('connect').onclick = () => {
       log('Connecting to ' + wsUrl + '...', 'info');
       ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         log('Connected!', 'info');
         document.getElementById('connect').disabled = true;
@@ -262,7 +262,7 @@ debug.get('/ws-test', async (c) => {
         document.getElementById('send').disabled = false;
         document.getElementById('sendConnect').disabled = false;
       };
-      
+
       ws.onmessage = (e) => {
         log('RECV: ' + e.data, 'received');
         try {
@@ -270,11 +270,11 @@ debug.get('/ws-test', async (c) => {
           log('  Parsed: ' + JSON.stringify(parsed, null, 2), 'received');
         } catch {}
       };
-      
+
       ws.onerror = (e) => {
         log('ERROR: ' + JSON.stringify(e), 'error');
       };
-      
+
       ws.onclose = (e) => {
         log('Closed: code=' + e.code + ' reason=' + e.reason, 'info');
         document.getElementById('connect').disabled = false;
@@ -284,15 +284,15 @@ debug.get('/ws-test', async (c) => {
         ws = null;
       };
     };
-    
+
     document.getElementById('disconnect').onclick = () => {
       if (ws) ws.close();
     };
-    
+
     document.getElementById('clear').onclick = () => {
       document.getElementById('log').innerHTML = '';
     };
-    
+
     document.getElementById('send').onclick = () => {
       const msg = document.getElementById('message').value;
       if (ws && msg) {
@@ -300,7 +300,7 @@ debug.get('/ws-test', async (c) => {
         ws.send(msg);
       }
     };
-    
+
     document.getElementById('sendConnect').onclick = () => {
       if (!ws) return;
       const connectFrame = {
@@ -325,14 +325,14 @@ debug.get('/ws-test', async (c) => {
       log('SEND Connect Frame: ' + msg, 'sent');
       ws.send(msg);
     };
-    
+
     document.getElementById('message').onkeypress = (e) => {
       if (e.key === 'Enter') document.getElementById('send').click();
     };
   </script>
 </body>
 </html>`;
-  
+
   return c.html(html);
 });
 
@@ -341,25 +341,25 @@ debug.get('/env', async (c) => {
   return c.json({
     has_anthropic_key: !!c.env.ANTHROPIC_API_KEY,
     has_openai_key: !!c.env.OPENAI_API_KEY,
-    has_gateway_token: !!c.env.MOLTBOT_GATEWAY_TOKEN,
+    has_gateway_token: !!c.env.OPENCLAW_GATEWAY_TOKEN,
     has_r2_access_key: !!c.env.R2_ACCESS_KEY_ID,
     has_r2_secret_key: !!c.env.R2_SECRET_ACCESS_KEY,
     has_cf_account_id: !!c.env.CF_ACCOUNT_ID,
     dev_mode: c.env.DEV_MODE,
     debug_routes: c.env.DEBUG_ROUTES,
-    bind_mode: c.env.CLAWDBOT_BIND_MODE,
+    bind_mode: c.env.OPENCLAW_BIND_MODE,
     cf_access_team_domain: c.env.CF_ACCESS_TEAM_DOMAIN,
     has_cf_access_aud: !!c.env.CF_ACCESS_AUD,
   });
 });
 
-// GET /debug/container-config - Read the moltbot config from inside the container
+// GET /debug/container-config - Read the openclaw config from inside the container
 debug.get('/container-config', async (c) => {
   const sandbox = c.get('sandbox');
-  
+
   try {
-    const proc = await sandbox.startProcess('cat /root/.clawdbot/clawdbot.json');
-    
+    const proc = await sandbox.startProcess('cat /root/.openclaw/openclaw.json');
+
     let attempts = 0;
     while (attempts < 10) {
       await new Promise(r => setTimeout(r, 200));
@@ -370,14 +370,14 @@ debug.get('/container-config', async (c) => {
     const logs = await proc.getLogs();
     const stdout = logs.stdout || '';
     const stderr = logs.stderr || '';
-    
+
     let config = null;
     try {
       config = JSON.parse(stdout);
     } catch {
       // Not valid JSON
     }
-    
+
     return c.json({
       status: proc.status,
       exitCode: proc.exitCode,

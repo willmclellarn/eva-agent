@@ -6,11 +6,15 @@ import {
   restartGateway,
   getStorageStatus,
   triggerSync,
+  listBackups,
+  createGoldenBackup,
+  restoreBackup,
   AuthError,
   type PendingDevice,
   type PairedDevice,
   type DeviceListResponse,
   type StorageStatusResponse,
+  type BackupListResponse,
 } from '../api'
 import './AdminPage.css'
 
@@ -23,11 +27,14 @@ export default function AdminPage() {
   const [pending, setPending] = useState<PendingDevice[]>([])
   const [paired, setPaired] = useState<PairedDevice[]>([])
   const [storageStatus, setStorageStatus] = useState<StorageStatusResponse | null>(null)
+  const [backups, setBackups] = useState<BackupListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
   const [restartInProgress, setRestartInProgress] = useState(false)
   const [syncInProgress, setSyncInProgress] = useState(false)
+  const [goldenBackupInProgress, setGoldenBackupInProgress] = useState(false)
+  const [restoreInProgress, setRestoreInProgress] = useState<string | null>(null)
 
   const fetchDevices = useCallback(async () => {
     try {
@@ -62,10 +69,21 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchBackups = useCallback(async () => {
+    try {
+      const data = await listBackups()
+      setBackups(data)
+    } catch (err) {
+      // Don't show error for backups - it's not critical
+      console.error('Failed to fetch backups:', err)
+    }
+  }, [])
+
   useEffect(() => {
     fetchDevices()
     fetchStorageStatus()
-  }, [fetchDevices, fetchStorageStatus])
+    fetchBackups()
+  }, [fetchDevices, fetchStorageStatus, fetchBackups])
 
   const handleApprove = async (requestId: string) => {
     setActionInProgress(requestId)
@@ -132,6 +150,8 @@ export default function AdminPage() {
         // Update the storage status with new lastSync time
         setStorageStatus(prev => prev ? { ...prev, lastSync: result.lastSync || null } : null)
         setError(null)
+        // Refresh backups list after sync
+        await fetchBackups()
       } else {
         setError(result.error || 'Sync failed')
       }
@@ -139,6 +159,50 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Failed to sync')
     } finally {
       setSyncInProgress(false)
+    }
+  }
+
+  const handleCreateGoldenBackup = async () => {
+    if (!confirm('Create a golden backup? This will snapshot the current state as a protected backup that won\'t be auto-overwritten.')) {
+      return
+    }
+
+    setGoldenBackupInProgress(true)
+    try {
+      const result = await createGoldenBackup()
+      if (result.success) {
+        setError(null)
+        alert(`Golden backup created successfully at ${result.timestamp}`)
+        // Refresh backups list
+        await fetchBackups()
+      } else {
+        setError(result.error || 'Failed to create golden backup')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create golden backup')
+    } finally {
+      setGoldenBackupInProgress(false)
+    }
+  }
+
+  const handleRestoreBackup = async (type: 'versioned' | 'golden', name: string) => {
+    if (!confirm(`Restore from ${type} backup "${name}"? This will overwrite current container data. You may need to restart the gateway after restoring.`)) {
+      return
+    }
+
+    setRestoreInProgress(`${type}:${name}`)
+    try {
+      const result = await restoreBackup(type, name)
+      if (result.success) {
+        setError(null)
+        alert('Backup restored successfully. Consider restarting the gateway to apply changes.')
+      } else {
+        setError(result.error || 'Failed to restore backup')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to restore backup')
+    } finally {
+      setRestoreInProgress(null)
     }
   }
 
@@ -206,16 +270,82 @@ export default function AdminPage() {
                 Last backup: {formatSyncTime(storageStatus.lastSync)}
               </span>
             </div>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={handleSync}
-              disabled={syncInProgress}
-            >
-              {syncInProgress && <ButtonSpinner />}
-              {syncInProgress ? 'Syncing...' : 'Backup Now'}
-            </button>
+            <div className="storage-actions">
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleSync}
+                disabled={syncInProgress}
+              >
+                {syncInProgress && <ButtonSpinner />}
+                {syncInProgress ? 'Syncing...' : 'Backup Now'}
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleCreateGoldenBackup}
+                disabled={goldenBackupInProgress}
+                title="Create a protected backup that won't be auto-overwritten"
+              >
+                {goldenBackupInProgress && <ButtonSpinner />}
+                {goldenBackupInProgress ? 'Creating...' : 'Create Golden Backup'}
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {storageStatus?.configured && backups && (backups.versioned.length > 0 || backups.golden.length > 0) && (
+        <section className="devices-section backups-section">
+          <div className="section-header">
+            <h2>Available Backups</h2>
+            <button className="btn btn-secondary" onClick={fetchBackups}>
+              Refresh
+            </button>
+          </div>
+
+          {backups.golden.length > 0 && (
+            <div className="backup-category">
+              <h3>Golden Backups (Protected)</h3>
+              <p className="hint">These backups are never auto-deleted. Use for important milestones.</p>
+              <div className="backups-list">
+                {backups.golden.map((name) => (
+                  <div key={`golden-${name}`} className="backup-item golden">
+                    <span className="backup-name">{name}</span>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => handleRestoreBackup('golden', name)}
+                      disabled={restoreInProgress !== null}
+                    >
+                      {restoreInProgress === `golden:${name}` && <ButtonSpinner />}
+                      {restoreInProgress === `golden:${name}` ? 'Restoring...' : 'Restore'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {backups.versioned.length > 0 && (
+            <div className="backup-category">
+              <h3>Versioned Backups (Auto-rotated)</h3>
+              <p className="hint">Last {backups.versioned.length} automatic backups. Older ones are deleted.</p>
+              <div className="backups-list">
+                {backups.versioned.map((name) => (
+                  <div key={`versioned-${name}`} className="backup-item versioned">
+                    <span className="backup-name">{name}</span>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => handleRestoreBackup('versioned', name)}
+                      disabled={restoreInProgress !== null}
+                    >
+                      {restoreInProgress === `versioned:${name}` && <ButtonSpinner />}
+                      {restoreInProgress === `versioned:${name}` ? 'Restoring...' : 'Restore'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
       )}
 
       <section className="devices-section gateway-section">
