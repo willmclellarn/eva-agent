@@ -55,7 +55,8 @@ export { Sandbox };
 function validateRequiredEnv(env: OpenClawEnv): string[] {
   const missing: string[] = [];
 
-  if (!env.OPENCLAW_GATEWAY_TOKEN) {
+  // Check for gateway token (accept either new or legacy name)
+  if (!env.OPENCLAW_GATEWAY_TOKEN && !env.MOLTBOT_GATEWAY_TOKEN) {
     missing.push('OPENCLAW_GATEWAY_TOKEN');
   }
 

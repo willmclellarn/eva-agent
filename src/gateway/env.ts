@@ -44,8 +44,9 @@ export function buildEnvVars(env: OpenClawEnv): Record<string, string> {
     envVars.ANTHROPIC_BASE_URL = env.ANTHROPIC_BASE_URL;
   }
 
-  // Pass gateway token
-  if (env.OPENCLAW_GATEWAY_TOKEN) envVars.OPENCLAW_GATEWAY_TOKEN = env.OPENCLAW_GATEWAY_TOKEN;
+  // Pass gateway token (prefer new name, fall back to legacy)
+  const gatewayToken = env.OPENCLAW_GATEWAY_TOKEN || env.MOLTBOT_GATEWAY_TOKEN;
+  if (gatewayToken) envVars.OPENCLAW_GATEWAY_TOKEN = gatewayToken;
   if (env.DEV_MODE) envVars.OPENCLAW_DEV_MODE = env.DEV_MODE;
   if (env.OPENCLAW_BIND_MODE) envVars.OPENCLAW_BIND_MODE = env.OPENCLAW_BIND_MODE;
   if (env.TELEGRAM_BOT_TOKEN) envVars.TELEGRAM_BOT_TOKEN = env.TELEGRAM_BOT_TOKEN;

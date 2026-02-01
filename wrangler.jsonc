@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "openclaw-sandbox",
+  "name": "moltbot-sandbox",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-06",
   "compatibility_flags": ["nodejs_compat"],
@@ -59,7 +59,7 @@
   "r2_buckets": [
     {
       "binding": "OPENCLAW_BUCKET",
-      "bucket_name": "openclaw-data",
+      "bucket_name": "moltbot-data",
     },
   ],
   // Cron trigger to sync openclaw data to R2 every 5 minutes

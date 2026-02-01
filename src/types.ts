@@ -15,6 +15,7 @@ export interface OpenClawEnv {
   ANTHROPIC_BASE_URL?: string;
   OPENAI_API_KEY?: string;
   OPENCLAW_GATEWAY_TOKEN?: string; // Gateway token for authentication
+  MOLTBOT_GATEWAY_TOKEN?: string; // Legacy alias for OPENCLAW_GATEWAY_TOKEN
 
   OPENCLAW_BIND_MODE?: string;
   DEV_MODE?: string; // Set to 'true' for local dev (skips CF Access auth + openclaw device pairing)
